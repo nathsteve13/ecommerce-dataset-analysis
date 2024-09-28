@@ -2,7 +2,9 @@ import streamlit as st
 import pandas as pd
 import matplotlib.pyplot as plt
 from datetime import datetime
-import numpy as np
+import urllib.request
+import matplotlib.image as mpimg
+
 
 # read datasets
 df_customers = pd.read_csv("https://raw.githubusercontent.com/nathsteve13/ecommerce-dataset-analysis/main/data/customers_dataset.csv")
@@ -248,6 +250,30 @@ else:
     st.warning(f"No reviews available for the selected date range from {start_date} to {end_date}.")
 
 
+# graph visualization 6 - geospasial
+f_filtered_orders = df_orders[(df_orders['order_purchase_timestamp'] >= pd.to_datetime(start_date)) &
+                               (df_orders['order_purchase_timestamp'] <= pd.to_datetime(end_date))]
+
+df_orders_customers = pd.merge(df_filtered_orders[['order_id', 'customer_id']], df_customers, on='customer_id')
+
+df_orders_geo = pd.merge(df_orders_customers, df_geolocation[['geolocation_zip_code_prefix', 'geolocation_lat', 'geolocation_lng']], 
+                         left_on='customer_zip_code_prefix', right_on='geolocation_zip_code_prefix')
+
+if df_orders_geo.empty:
+    st.warning("No data available for the selected date range.")
+else:
+    st.subheader(f"Customer data geolocation (from {start_date} to {end_date})")
+
+    st.write("Data Geolocation:", df_orders_geo.head())
+
+    url = 'https://i.pinimg.com/originals/3a/0c/e1/3a0ce18b3c842748c255bc0aa445ad41.jpg'
+    brazil_map = mpimg.imread(urllib.request.urlopen(url), 'jpg')
+
+    fig, ax = plt.subplots(figsize=(10, 10))
+    ax.scatter(df_orders_geo['geolocation_lng'], df_orders_geo['geolocation_lat'], alpha=0.6, s=20, c='maroon')
+    ax.axis('off')
+    ax.imshow(brazil_map, extent=[-73.98283055, -33.8, -33.75116944, 5.4])
+    st.pyplot(fig)
 
 
 st.caption("Dashboard created by Nathanael Steven S (2024)")
